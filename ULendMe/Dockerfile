@@ -25,7 +25,7 @@ pip install -r requirements.txt --no-cache
 find /usr/local/lib -type d -name __pycache__ -exec rm -r {} +
 EOF
 
-COPY ./dapp.py .
+COPY . .
 
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"
 
