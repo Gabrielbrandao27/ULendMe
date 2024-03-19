@@ -33,7 +33,7 @@ yarn start input send --payload [message] <options>
 
 So, for example:
 ```shell
-- yarn start input send --payload "offer,0x1234,macaco#123,18-03-2024-19:30,7"
+yarn start input send --payload "offer,0x1234,macaco#123,0.0065,18-03-2024-19:30,7"
 ```
 
 
@@ -47,5 +47,5 @@ yarn start inspect --payload '<payload-here>'
 
 So, for example:
 ```shell
-- yarn start inspect --payload 'posts'
+yarn start inspect --payload "posts"
 ```

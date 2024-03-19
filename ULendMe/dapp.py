@@ -60,9 +60,9 @@ def handle_inspect(data):
 
     if payload == "posts":
         for user_tag in user_info:
-            if len(user_info[user_tag]["offers"].values()) > 0 :
+            if len(user_info[user_tag]["offers"]) > 0 :
                 outgoing_payload.append(user_info[user_tag]["offers"])
-            elif len(user_info[user_tag]["demands"].values()) > 0:
+            elif len(user_info[user_tag]["demands"]) > 0:
                 outgoing_payload.append(user_info[user_tag]["demands"])
 
         report = {"payload": str2hex(f'\n\nAll Offers and Demands:\n\n{outgoing_payload}')}
