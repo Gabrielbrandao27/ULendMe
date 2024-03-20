@@ -67,7 +67,7 @@ def handle_inspect(data):
 
         report = {"payload": str2hex(f'\n\nAll Offers and Demands:\n\n{outgoing_payload}')}
 
-    response = requests.post(rollup_server + "\report", json=report)
+    response = requests.post(rollup_server + "/report", json=report)
     logger.info(f"Received report status {response.status_code}")
 
     return "accept"
