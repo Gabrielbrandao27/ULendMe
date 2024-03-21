@@ -29,11 +29,11 @@ The `input send` command adds inputs to a Cartesi Rollups DApp and has the follo
 yarn start input send --payload [message] <options>
 ```
 
-[message] will be: post_type, wallet, nft_id, price, post_timestamp, loan_period
+[message] will be: wallet, nft_id, price, post_timestamp, loan_period
 
 So, for example:
 ```shell
-yarn start input send --payload "offer,0x1234,macaco#123,0.0065,18-03-2024-19:30,7"
+yarn start input send --payload "0x1234,macaco#123,0.0065,18-03-2024-19:30,7"
 ```
 
 
