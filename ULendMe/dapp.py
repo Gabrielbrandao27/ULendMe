@@ -3,7 +3,7 @@ import cartesi
 import cartesi_wallet.wallet as Wallet
 import logging
 import requests
-from utils import get_user_tag, hex2str, str2hex, handle_erc721_deposit
+from utils import hex2str, str2hex, handle_erc721_deposit
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
@@ -31,24 +31,21 @@ def handle_advance(data):
 
     if msg_sender == ERC_721:
         erc217, address_current, token_id = handle_erc721_deposit(data)
-        user_info[user_tag]["loaned_tokens"].append({token_id: {"Token Contract": erc217}})
+        user_info[address_current]["loaned_tokens"].append({token_id: {"Token Contract": erc217}})
 
     else:
         address_current = msg_sender
 
-        wallet, offer_token_id, price, post_timestamp, loan_period = hex2str(data["payload"]).split(",")
+        offer_token_id, price, post_timestamp, loan_period = hex2str(data["payload"]).split(",")
 
-    user_tag = get_user_tag(address_current, wallet)
+        if address_current not in user_info:
+            user_info[address_current] = {
+                "offers": [],
+                "loaned_tokens": [],
+                "reputation": 0
+            }
 
-    if user_tag not in user_info:
-        user_info[user_tag] = {
-            "offers": [],
-            "loaned_tokens": [],
-            "reputation": 0
-        }
-
-    user_info[user_tag]["offers"].append({offer_token_id: {"Price": price, "Post Date": post_timestamp, "Loan Period": loan_period}})
-        
+        user_info[address_current]["offers"].append({offer_token_id: {"Price": price, "Post Date": post_timestamp, "Loan Period": loan_period}})
         
     return "accept"
 
@@ -65,18 +62,11 @@ def handle_inspect(data):
     report = {"payload": ''}
 
     if inputs[0] == "Catalog":
-        for user_tag in user_info:
-            if len(user_info[user_tag]["offers"]) > 0 :
-                outgoing_payload.append(user_info[user_tag]["offers"])
-
-        report = {"payload": str2hex(f'\n\nAll NFTs avaible on the Catalog:\n{outgoing_payload}')}
+        report = {"payload": str2hex(f'\n\nAll NFTs avaible on the Catalog:\n{user_info}')}
     
     elif inputs[0] == "Status":
         address_current = inputs[1].lower()
-        wallet = inputs[2].lower()
-        user_tag = get_user_tag(address_current, wallet)
-
-        report = {"payload": str2hex(f'\n\nAll Loaned NFTs:\n{user_info[user_tag]["loaned_tokens"]}')}
+        report = {"payload": str2hex(f'\n\nAll Loaned NFTs:\n{user_info[address_current]["loaned_tokens"]}')}
 
     response = requests.post(rollup_server + "/report", json=report)
     logger.info(f"Received report status {response.status_code}")

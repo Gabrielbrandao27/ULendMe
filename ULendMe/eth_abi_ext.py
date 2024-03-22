@@ -19,23 +19,23 @@ class PackedBooleanDecoder(BooleanDecoder):
 class PackedAddressDecoder(AddressDecoder):
     data_byte_size = 20
 
-registry_packed.register_decoder(
-    BaseEquals("bool"),
-    PackedBooleanDecoder,
-    label="bool",
-)
+# registry_packed.register_decoder(
+#     BaseEquals("bool"),
+#     PackedBooleanDecoder,
+#     label="bool",
+# )
 
-registry_packed.register_decoder(
-    BaseEquals("address"),
-    PackedAddressDecoder,
-    label='address'
-)
+# registry_packed.register_decoder(
+#     BaseEquals("address"),
+#     PackedAddressDecoder,
+#     label='address'
+# )
 
-registry_packed.register_decoder(
-    BaseEquals("uint"),
-    UnsignedIntegerDecoder,
-    label="uint"
-)
+# registry_packed.register_decoder(
+#     BaseEquals("uint"),
+#     UnsignedIntegerDecoder,
+#     label="uint"
+# )
 
 
 default_codec_packed = ABICodec(registry_packed)
