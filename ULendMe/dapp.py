@@ -1,7 +1,7 @@
 from os import environ
 import logging
 import requests
-from auxiliar_functions import get_user_tag, hex2str, str2hex, handle_erc721_deposit
+from utils import get_user_tag, hex2str, str2hex, handle_erc721_deposit
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
