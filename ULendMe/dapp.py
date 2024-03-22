@@ -19,6 +19,7 @@ ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
 # this structure will store all the information related to the user
 user_info = {}
 
+
 def handle_advance(data):
     logger.info(f"Received advance request data {data}")
     notice = {"payload": data["payload"]}
@@ -31,22 +32,34 @@ def handle_advance(data):
 
     if msg_sender == ERC_721:
         erc217, address_current, token_id = handle_erc721_deposit(data)
-        user_info[address_current]["loaned_tokens"].append({token_id: {"Token Contract": erc217}})
+        user_info[address_current]["loaned_tokens"].append(
+            {token_id: {"Token Contract": erc217}}
+        )
 
     else:
         address_current = msg_sender
 
-        offer_token_id, price, post_timestamp, loan_period = hex2str(data["payload"]).split(",")
+        offer_token_id, price, post_timestamp, loan_period = hex2str(
+            data["payload"]
+        ).split(",")
 
         if address_current not in user_info:
             user_info[address_current] = {
                 "offers": [],
                 "loaned_tokens": [],
-                "reputation": 0
+                "reputation": 0,
             }
 
-        user_info[address_current]["offers"].append({offer_token_id: {"Price": price, "Post Date": post_timestamp, "Loan Period": loan_period}})
-        
+        user_info[address_current]["offers"].append(
+            {
+                offer_token_id: {
+                    "Price": price,
+                    "Post Date": post_timestamp,
+                    "Loan Period": loan_period,
+                }
+            }
+        )
+
     return "accept"
 
 
@@ -59,14 +72,20 @@ def handle_inspect(data):
 
     inputs = []
     inputs = payload.split(",")
-    report = {"payload": ''}
+    report = {"payload": ""}
 
     if inputs[0] == "Catalog":
-        report = {"payload": str2hex(f'\n\nAll NFTs avaible on the Catalog:\n{user_info}')}
-    
+        report = {
+            "payload": str2hex(f"\n\nAll NFTs avaible on the Catalog:\n{user_info}")
+        }
+
     elif inputs[0] == "Status":
         address_current = inputs[1].lower()
-        report = {"payload": str2hex(f'\n\nAll Loaned NFTs:\n{user_info[address_current]["loaned_tokens"]}')}
+        report = {
+            "payload": str2hex(
+                f'\n\nAll Loaned NFTs:\n{user_info[address_current]["loaned_tokens"]}'
+            )
+        }
 
     response = requests.post(rollup_server + "/report", json=report)
     logger.info(f"Received report status {response.status_code}")
