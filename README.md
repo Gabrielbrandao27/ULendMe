@@ -36,6 +36,13 @@ So, for example:
 yarn start input send --payload "0x1234,macaco#123,0.0065,18-03-2024-19:30,7"
 ```
 
+Transfering NFTs can be done by using the following payload:
+```shell
+yarn start input send --payload ""
+```
+
+
+
 
 ### Inspecting Inputs
 
@@ -47,5 +54,13 @@ yarn start inspect --payload '<payload-here>'
 
 So, for example:
 ```shell
-yarn start inspect --payload "posts"
+yarn start inspect --payload "Catalog"
 ```
+You will inspect all offers posted on the page
+
+
+And this command here:
+```shell
+yarn start inspect --payload "Status,0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,0x1234"
+```
+Allows you to check your private loaned tokens
