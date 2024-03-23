@@ -33,12 +33,12 @@ yarn start input send --payload [message] <options>
 
 - So, for example:
 ```shell
-yarn start input send --payload "ape#123,0.0065,18-03-2024-19:30,7"
+yarn start input send --payload "offer,ape#123,0.0065,18-03-2024-19:30,7"
 ```
 
 - Sending inputs using different accounts:
 ```shell
-yarn start input send --payload 'leopard#09,3.0,22-03-2024-20:30,30' --accountIndex '1'
+yarn start input send --payload 'offer,leopard#09,3.0,22-03-2024-20:30,30' --accountIndex '1'
 ```
 
 ### Handling ERC721 Tokens
