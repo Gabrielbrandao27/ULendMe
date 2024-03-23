@@ -1,9 +1,9 @@
 from os import environ
-import cartesi
 import cartesi_wallet.wallet as Wallet
 import logging
 import requests
-from utils import hex2str, str2hex, handle_erc721_deposit
+from utils import hex2str, str2hex, encode, decode_json
+from urllib.parse import urlparse
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
@@ -16,49 +16,76 @@ ERC_721 = "0x237F8DD094C0e47f4236f12b4Fa01d6Dae89fb87"
 ERC_20 = "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB"
 ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
 
+wallet = Wallet
+
 # this structure will store all the information related to the user
 user_info = {}
 
 
 def handle_advance(data):
     logger.info(f"Received advance request data {data}")
-    notice = {"payload": data["payload"]}
-    response = requests.post(rollup_server + "/notice", json=notice)
-    logger.info(
-        f"Received notice status {response.status_code} body {response.content}"
-    )
-
     msg_sender = data["metadata"]["msg_sender"].lower()
+    payload = data["payload"]
+    
+    # Set Relay
+    if msg_sender.lower() == DAPP_RELAY.lower():
+        global rollup_address
+        logger.info(f"Received advance from dapp relay")
+        rollup_address = payload
+        response = requests.post(rollup_server + "/notice", json={"payload": str2hex(f"Set rollup_address {rollup_address}")})
+        return "accept"
+    
+    # Depositing ERC721
+    try:
+        notice = None
+        if msg_sender == ERC_721.lower():
+            notice = wallet.erc721_deposit_process(payload)
+            response = requests.post(rollup_server + "/notice", json={"payload": notice.payload})
+        if notice:
+            logger.info(f"Received notice status {response.status_code} body {response.content}")
+            return "accept"
+    except Exception as error:
+        error_msg = f"Failed to process deposit '{payload}'. {error}"
+        logger.debug(error_msg, exc_info=True)
+        return "reject"
 
-    if msg_sender == ERC_721:
-        erc217, address_current, token_id = handle_erc721_deposit(data)
-        user_info[address_current]["loaned_tokens"].append(
-            {token_id: {"Token Contract": erc217}}
-        )
+    # Transfering and Withdrawing ERC721
+    try:
+        notice = None
+        req_json = decode_json(payload)
+        if req_json["method"] == "erc721_transfer":
+            notice = wallet.erc721_transfer(req_json["from"].lower(), req_json["to"].lower(), req_json["erc721"].lower(), req_json["token_id"])
+            response = requests.post(rollup_server + "/notice", json={"payload": notice.payload})
+        if req_json["method"] == "erc721_withdraw":
+            voucher = wallet.erc721_withdraw(rollup_address, req_json["from"].lower(), req_json["erc721"].lower(), req_json["token_id"])
+            response = requests.post(rollup_server + "/voucher", json={"payload": voucher.payload, "destination": voucher.destination})
+        if notice:
+            return "accept"
+    except Exception as error:
+        error_msg = f"Failed to process deposit '{payload}'. {error}"
+        logger.debug(error_msg, exc_info=True)
+        return "reject"
 
-    else:
-        address_current = msg_sender
+    address_current = msg_sender
 
-        offer_token_id, price, post_timestamp, loan_period = hex2str(
-            data["payload"]
-        ).split(",")
+    offer_token_id, price, post_timestamp, loan_period = hex2str(payload).split(",")
 
-        if address_current not in user_info:
-            user_info[address_current] = {
-                "offers": [],
-                "loaned_tokens": [],
-                "reputation": 0,
+    if address_current not in user_info:
+        user_info[address_current] = {
+            "offers": [],
+            "loaned_tokens": [],
+            "reputation": 0,
+        }
+
+    user_info[address_current]["offers"].append(
+        {
+            offer_token_id: {
+                "Price": price,
+                "Post Date": post_timestamp,
+                "Loan Period": loan_period,
             }
-
-        user_info[address_current]["offers"].append(
-            {
-                offer_token_id: {
-                    "Price": price,
-                    "Post Date": post_timestamp,
-                    "Loan Period": loan_period,
-                }
-            }
-        )
+        }
+    )
 
     return "accept"
 
@@ -67,8 +94,6 @@ def handle_inspect(data):
     logger.info(f"Received inspect request data {data}")
     payload = hex2str(data["payload"])
     logger.info(f"data payload: {payload}")
-
-    outgoing_payload = []
 
     inputs = []
     inputs = payload.split(",")
@@ -79,6 +104,11 @@ def handle_inspect(data):
             "payload": str2hex(f"\n\nAll NFTs avaible on the Catalog:\n{user_info}")
         }
 
+        response = requests.post(rollup_server + "/report", json=report)
+        logger.info(f"Received report status {response.status_code}")
+
+        return "accept"
+
     elif inputs[0] == "Status":
         address_current = inputs[1].lower()
         report = {
@@ -87,10 +117,34 @@ def handle_inspect(data):
             )
         }
 
-    response = requests.post(rollup_server + "/report", json=report)
-    logger.info(f"Received report status {response.status_code}")
+        response = requests.post(rollup_server + "/report", json=report)
+        logger.info(f"Received report status {response.status_code}")
 
-    return "accept"
+        return "accept"
+    
+    try:
+        url = urlparse(hex2str(data["payload"]))
+        if url.path.startswith("balance/"):
+            info = url.path.replace("balance/", "").split("/")
+            token_type, account = info[0].lower(), info[1].lower()
+            token_address, token_id, amount = "", 0, 0
+
+            if (token_type == "erc721"):
+                token_address, token_id = info[2], info[3]
+                amount = 1 if token_id in wallet.balance_get(account).erc721_get(token_address.lower()) else 0
+            
+            report = {"payload": encode({"token_id": token_id, "amount": amount, "token_type": token_type})}
+            response = requests.post(rollup_server + "/report", json=report)
+            logger.info(f"Received report status {response.status_code} body {response.content}")
+
+        return "accept"
+    
+    except Exception as error:
+        error_msg = f"Failed to process inspect request. {error}"
+        logger.debug(error_msg, exc_info=True)
+        return "reject"
+
+
 
 
 handlers = {
