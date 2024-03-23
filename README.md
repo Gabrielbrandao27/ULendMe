@@ -85,7 +85,7 @@ You will inspect all offers posted on the page
 
 - And this command here:
 ```shell
-yarn start inspect --payload "Status,0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,0x1234"
+yarn start inspect --payload "Status,0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 ```
 Allows you to check your private loaned tokens
 

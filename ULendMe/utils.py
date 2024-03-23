@@ -1,4 +1,3 @@
-from eth_abi_ext import decode_packed
 from urllib.parse import urlparse
 import json
 
