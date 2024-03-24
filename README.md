@@ -106,7 +106,7 @@ yarn start inspect --payload "Status,0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 Allows you to check your private loaned tokens
 
 
-- Checking your wallet balance (Work in progress!):
+- Checking your wallet balance (Work in progress!):<br>
 balance/ether/{wallet}/{token_addres}/{token_id}
 
 ```shell
