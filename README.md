@@ -2,8 +2,25 @@
 
 Made by: Gabriel and Marcelo
 
+> This is a work in progress.
 
-### Running dApp
+## About the dApp
+
+Because NFTs are completely unique, if someone wants to make use of one (be it for gaming, for access or any needs you may have),<br>
+they would have to buy it, and the person that had access to it will loose it, and won't be able to access it anymore.<br><br>
+
+This dApp enables users to utilize NFTs without having to pay it's full price and without having to worry about possession changing.<br>
+At the same time, lenders can make a profit of their NFTs without losing them, not having to worry about selling and loosing it's possession.<br>
+<br>
+This dApp will provide a plataform for:
+- Creating Offers for the NFTs avaiable in your wallet (we will use Metamask)
+- Browsing a Catalog with all the NFTs avaiable to borrow
+- Choosing the NFT you want and borrowing it
+- Seeing the offers you've made and their status
+<br><br>
+Now we will go through how to build, run and interact with the dApp. As mentioned above, this is a work in progress, and not all features are avaiable. Currently, it's only possible to create NFT offers.
+
+### Building and Running the dApp
 
 To run Back-end:
 
@@ -17,8 +34,7 @@ To run Front-end Console:
 
 ```shell
 - cd sunodo-frontend-console/
-- yarn
-- yarn build
+- yarn && yarn build
 ```
 
 ### Sending Inputs
@@ -41,7 +57,7 @@ yarn start input send --payload "offer,ape#123,0.0065,18-03-2024-19:30,7"
 yarn start input send --payload 'offer,leopard#09,3.0,22-03-2024-20:30,30' --accountIndex '1'
 ```
 
-### Handling ERC721 Tokens
+### Handling ERC721 Tokens (WORK IN PROGRESS!)
 
 - payload for transfering a ERC721 tokens:
 ```shell
@@ -89,7 +105,8 @@ yarn start inspect --payload "Status,0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 ```
 Allows you to check your private loaned tokens
 
-- Checking your wallet balance:
+
+- Checking your wallet balance (Work in progress!):
 balance/ether/{wallet}/{token_addres}/{token_id}
 
 ```shell
