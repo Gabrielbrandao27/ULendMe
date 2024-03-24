@@ -7,7 +7,7 @@ Made by: Gabriel and Marcelo
 ## About the dApp
 
 Because NFTs are completely unique, if someone wants to make use of one (be it for gaming, for access or any needs you may have),<br>
-they would have to buy it, and the person that had access to it will loose it, and won't be able to access it anymore.<br><br>
+they would have to buy it, and the person that had access to it will lose it, and won't be able to access it anymore.<br><br>
 
 This dApp enables users to utilize NFTs without having to pay it's full price and without having to worry about possession changing.<br>
 At the same time, lenders can make a profit of their NFTs without losing them, not having to worry about selling and loosing it's possession.<br>
