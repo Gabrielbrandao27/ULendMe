@@ -17,6 +17,7 @@ ERC_20 = "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB"
 ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
 
 wallet = Wallet
+rollup_address = ""
 
 # this structure will store all the information related to the user
 user_info = {}
@@ -67,24 +68,34 @@ def handle_advance(data):
         print(req_json)
 
         if req_json["method"] == "ether_transfer":
+            converted_value = (
+                int(req_json["amount"])
+                if isinstance(req_json["amount"], str) and req_json["amount"].isdigit()
+                else req_json["amount"]
+            )
             notice = wallet.ether_transfer(
-                req_json["from"].lower(), req_json["to"].lower(), req_json["amount"]
+                req_json["from"].lower(), req_json["to"].lower(), converted_value
             )
             response = requests.post(
                 rollup_server + "/notice", json={"payload": notice.payload}
             )
             return "accept"
-        
+
         if req_json["method"] == "ether_withdraw":
+            converted_value = (
+                int(req_json["amount"])
+                if isinstance(req_json["amount"], str) and req_json["amount"].isdigit()
+                else req_json["amount"]
+            )
             voucher = wallet.ether_withdraw(
-                rollup_address, req_json["from"].lower(), req_json["amount"]
+                rollup_address, req_json["from"].lower(), converted_value
             )
             response = requests.post(
                 rollup_server + "/voucher",
                 json={"payload": voucher.payload, "destination": voucher.destination},
             )
             return "accept"
-        
+
         if req_json["method"] == "erc721_transfer":
             notice = wallet.erc721_transfer(
                 req_json["from"].lower(),
@@ -96,7 +107,7 @@ def handle_advance(data):
                 rollup_server + "/notice", json={"payload": notice.payload}
             )
             return "accept"
-        
+
         if req_json["method"] == "erc721_withdraw":
             voucher = wallet.erc721_withdraw(
                 rollup_address,
@@ -117,6 +128,7 @@ def handle_advance(data):
         )
         logger.debug(error_msg, exc_info=True)
         return "reject"
+
 
 
     # Adding offer to the Catalog
@@ -162,6 +174,7 @@ def handle_inspect(data):
     inputs = payload.split(",")
     report = {"payload": ""}
 
+    # Checking if the Inspect was for NFT Catalog
     if inputs[0] == "Catalog":
         report = {
             "payload": str2hex(f"\n\nAll NFTs avaible on the Catalog:\n{user_info}")
@@ -171,7 +184,8 @@ def handle_inspect(data):
         logger.info(f"Received report status {response.status_code}")
 
         return "accept"
-
+    
+    # Checking if the Inspect was for the NFTs the user has lent
     elif inputs[0] == "Status":
         address_current = inputs[1].lower()
         report = {
@@ -185,8 +199,9 @@ def handle_inspect(data):
 
         return "accept"
 
+    # Checking if the Inspect was for the user's Wallet Balance
     try:
-        url = urlparse(hex2str(data["payload"]))
+        url = urlparse(payload)
         if url.path.startswith("balance/"):
             info = url.path.replace("balance/", "").split("/")
             token_type, account = info[0].lower(), info[1].lower()

@@ -50,8 +50,13 @@ yarn start input send --payload "
     "method": "ether_transfer",
     "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-    "amount": 99000000000000000000
+    "amount": 5000000000000000000
 }"
+```
+
+- payload for withdrawing Ether:
+```shell
+yarn start input send --payload "{"method": "ether_withdraw", "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "amount": 5000000000000000000}"
 ```
 
 
