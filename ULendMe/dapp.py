@@ -38,10 +38,15 @@ def handle_advance(data):
         )
         return "accept"
 
-    # Depositing ERC721
+    # Depositing Ether and ERC721
     try:
         notice = None
-        if msg_sender == ERC_721.lower():
+        if msg_sender.lower() == ETHER.lower():
+            notice = wallet.ether_deposit_process(payload)
+            response = requests.post(
+                rollup_server + "/notice", json={"payload": notice.payload}
+            )
+        elif msg_sender == ERC_721.lower():
             notice = wallet.erc721_deposit_process(payload)
             response = requests.post(
                 rollup_server + "/notice", json={"payload": notice.payload}
@@ -56,10 +61,30 @@ def handle_advance(data):
         logger.debug(error_msg, exc_info=True)
         return "reject"
 
-    # Transfering and Withdrawing ERC721
+    # Transfering and Withdrawing Ether and ERC721
     try:
-        notice = None
         req_json = decode_json(payload)
+        print(req_json)
+
+        if req_json["method"] == "ether_transfer":
+            notice = wallet.ether_transfer(
+                req_json["from"].lower(), req_json["to"].lower(), req_json["amount"]
+            )
+            response = requests.post(
+                rollup_server + "/notice", json={"payload": notice.payload}
+            )
+            return "accept"
+        
+        if req_json["method"] == "ether_withdraw":
+            voucher = wallet.ether_withdraw(
+                rollup_address, req_json["from"].lower(), req_json["amount"]
+            )
+            response = requests.post(
+                rollup_server + "/voucher",
+                json={"payload": voucher.payload, "destination": voucher.destination},
+            )
+            return "accept"
+        
         if req_json["method"] == "erc721_transfer":
             notice = wallet.erc721_transfer(
                 req_json["from"].lower(),
@@ -70,6 +95,8 @@ def handle_advance(data):
             response = requests.post(
                 rollup_server + "/notice", json={"payload": notice.payload}
             )
+            return "accept"
+        
         if req_json["method"] == "erc721_withdraw":
             voucher = wallet.erc721_withdraw(
                 rollup_address,
@@ -81,15 +108,18 @@ def handle_advance(data):
                 rollup_server + "/voucher",
                 json={"payload": voucher.payload, "destination": voucher.destination},
             )
-        if notice:
             return "accept"
+
     except Exception as error:
-        error_msg = f"Failed to process action '{payload}'. {error}"
+        error_msg = f"Failed to process command '{payload}'. {error}"
+        response = requests.post(
+            rollup_server + "/report", json={"payload": encode(error_msg)}
+        )
         logger.debug(error_msg, exc_info=True)
         return "reject"
 
-    # Adding offer to the Catalog
 
+    # Adding offer to the Catalog
     try:
         offer, offer_token_id, price, post_timestamp, loan_period = hex2str(
             payload
@@ -162,7 +192,10 @@ def handle_inspect(data):
             token_type, account = info[0].lower(), info[1].lower()
             token_address, token_id, amount = "", 0, 0
 
-            if token_type == "erc721":
+            if token_type == "ether":
+                amount = wallet.balance_get(account).ether_get()
+
+            elif token_type == "erc721":
                 token_address, token_id = info[2], info[3]
                 amount = (
                     1
