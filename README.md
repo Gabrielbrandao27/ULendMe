@@ -1,6 +1,6 @@
 # ULendMe
 
-Made by: Gabriel and Marcelo
+Made by: Gabriel Brandão
 
 > This is a work in progress.
 
