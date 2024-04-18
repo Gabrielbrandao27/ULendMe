@@ -1,7 +1,9 @@
 from os import environ
 import cartesi_wallet.wallet as Wallet
+from cartesi_wallet.outputs import Voucher
 import logging
 import requests
+from eth_abi import encode as encode_abi
 from utils import hex2str, str2hex, encode, decode_json
 from urllib.parse import urlparse
 
@@ -15,6 +17,11 @@ DAPP_RELAY = "0xF5DE34d6BbC0446E2a45719E718efEbaaE179daE"
 ERC_721 = "0x237F8DD094C0e47f4236f12b4Fa01d6Dae89fb87"
 ERC_20 = "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB"
 ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
+
+SAFE_MINT_FUNCTION = b"\xd2\x04\xc4^"
+
+ERC_721_CONTRACT_ABI = b"\xd2\x8d\xd1\xef"
+ERC_721_CONTRACT_ADRESS = "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"
 
 wallet = Wallet
 rollup_address = ""
@@ -62,8 +69,11 @@ def handle_advance(data):
         logger.debug(error_msg, exc_info=True)
         return "reject"
 
-    # Transfering and Withdrawing Ether and ERC721
+    # Transfering and Withdrawing Ether and ERC721 and minting NFT
     try:
+        if rollup_address == "":
+            raise Exception("Dapp Relay not set")
+
         req_json = decode_json(payload)
         print(req_json)
 
@@ -121,6 +131,19 @@ def handle_advance(data):
             )
             return "accept"
 
+        if req_json["method"] == "erc721_mint":
+            payload = SAFE_MINT_FUNCTION + encode_abi(
+                ["address", "string"], [msg_sender, ""]
+            )
+            logger.info(payload)
+            contract_address = ERC_721_CONTRACT_ADRESS.lower()
+            voucher = Voucher(contract_address, payload)
+            response = requests.post(
+                rollup_server + "/voucher",
+                json={"destination": voucher.destination, "payload": voucher.payload},
+            )
+            return "accept"
+
     except Exception as error:
         error_msg = f"Failed to process command '{payload}'. {error}"
         response = requests.post(
@@ -128,8 +151,6 @@ def handle_advance(data):
         )
         logger.debug(error_msg, exc_info=True)
         return "reject"
-
-
 
     # Adding offer to the Catalog
     try:
@@ -184,7 +205,7 @@ def handle_inspect(data):
         logger.info(f"Received report status {response.status_code}")
 
         return "accept"
-    
+
     # Checking if the Inspect was for the NFTs the user has lent
     elif inputs[0] == "Status":
         address_current = inputs[1].lower()
