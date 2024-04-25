@@ -18,9 +18,8 @@ ERC_721 = "0x237F8DD094C0e47f4236f12b4Fa01d6Dae89fb87"
 ERC_20 = "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB"
 ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
 
-SAFE_MINT_FUNCTION = b"\xd2\x04\xc4^"
-
-ERC_721_CONTRACT_ABI = b"\xd2\x8d\xd1\xef"
+SAFE_MINT_FUNCTION = b"\x75\x5e\xdd\x17"
+APPROVE_FUNCTION = b"\x85\x25\x8b\x4b"
 ERC_721_CONTRACT_ADRESS = "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"
 
 wallet = Wallet
@@ -132,8 +131,19 @@ def handle_advance(data):
             return "accept"
 
         if req_json["method"] == "erc721_mint":
-            payload = SAFE_MINT_FUNCTION + encode_abi(
-                ["address", "string"], [msg_sender, ""]
+            payload = SAFE_MINT_FUNCTION + encode_abi(["address"], [msg_sender])
+            logger.info(payload)
+            contract_address = ERC_721_CONTRACT_ADRESS.lower()
+            voucher = Voucher(contract_address, payload)
+            response = requests.post(
+                rollup_server + "/voucher",
+                json={"destination": voucher.destination, "payload": voucher.payload},
+            )
+            return "accept"
+
+        if req_json["method"] == "erc721_approve":
+            payload = APPROVE_FUNCTION + encode_abi(
+                ["address", "string"], [msg_sender, req_json["token_id"]]
             )
             logger.info(payload)
             contract_address = ERC_721_CONTRACT_ADRESS.lower()
@@ -228,7 +238,10 @@ def handle_inspect(data):
             token_type, account = info[0].lower(), info[1].lower()
             token_address, token_id, amount = "", 0, 0
 
-            if token_type == "ether":
+            if token_type == "all":
+                amount = wallet.balance_get(account)
+
+            elif token_type == "ether":
                 amount = wallet.balance_get(account).ether_get()
 
             elif token_type == "erc721":

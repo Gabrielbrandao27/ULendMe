@@ -92,11 +92,11 @@ yarn start voucher execute --index 0 --input 2 --address 0xab7528bb862fb57e8a2bc
 ```shell
 yarn start input send --payload '
 {
-    'method': 'erc721_transfer',
-    'from': '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    'to': '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-	'erc721': '0xae7f61eCf06C65405560166b259C54031428A9C4',
-    'token_id': 0
+    "method": "erc721_transfer",
+    "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "to": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+    "erc721": "0xae7f61eCf06C65405560166b259C54031428A9C4",
+    "token_id": 0
 }' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e
 ```
 
@@ -106,12 +106,27 @@ yarn start input send --payload '
 {
     "method": "erc721_withdraw",
     "from": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-	"erc721": "0xae7f61eCf06C65405560166b259C54031428A9C4",
+    "erc721": "0xae7f61eCf06C65405560166b259C54031428A9C4",
     "token_id": 1
 }' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e
 ```
 
+- payload for minting an ERC721 token:
+```shell
+yarn start input send --payload '
+{
+    "method": "erc721_mint"
+}' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e
+```
 
+- payload for approving the ERC721 portal's address:
+```shell
+yarn start input send --payload '
+{
+    "method": "erc721_approve",
+    "token_id": 1
+}' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e
+```
 
 ### Inspecting Inputs
 
