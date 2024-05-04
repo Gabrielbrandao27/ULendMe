@@ -1,16 +1,16 @@
-from os import environ
-import cartesi_wallet.wallet as Wallet
 from cartesi_wallet.outputs import Voucher
-import logging
-import requests
 from eth_abi import encode as encode_abi
 from utils import hex2str, str2hex, encode, decode_json
 from urllib.parse import urlparse
+import cartesi_wallet.wallet as Wallet
+import logging
+import os
+import requests
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
 
-rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
+rollup_server = os.environ["ROLLUP_HTTP_SERVER_URL"]
 logger.info(f"HTTP rollup_server url is {rollup_server}")
 
 DAPP_RELAY = "0xF5DE34d6BbC0446E2a45719E718efEbaaE179daE"
