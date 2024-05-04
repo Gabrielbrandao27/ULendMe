@@ -19,8 +19,7 @@ ERC_20 = "0x9C21AEb2093C32DDbC53eEF24B873BDCd1aDa1DB"
 ETHER = "0xFfdbe43d4c855BF7e0f105c400A50857f53AB044"
 
 SAFE_MINT_FUNCTION = b"\x75\x5e\xdd\x17"
-APPROVE_FUNCTION = b"\x85\x25\x8b\x4b"
-ERC_721_CONTRACT_ADRESS = "0xc6e7DF5E7b4f2A278906862b61205850344D4e7d"
+ERC_721_CONTRACT_ADRESS = "0xc6e7df5e7b4f2a278906862b61205850344d4e7d"
 
 wallet = Wallet
 rollup_address = ""
@@ -132,19 +131,6 @@ def handle_advance(data):
 
         if req_json["method"] == "erc721_mint":
             payload = SAFE_MINT_FUNCTION + encode_abi(["address"], [msg_sender])
-            logger.info(payload)
-            contract_address = ERC_721_CONTRACT_ADRESS.lower()
-            voucher = Voucher(contract_address, payload)
-            response = requests.post(
-                rollup_server + "/voucher",
-                json={"destination": voucher.destination, "payload": voucher.payload},
-            )
-            return "accept"
-
-        if req_json["method"] == "erc721_approve":
-            payload = APPROVE_FUNCTION + encode_abi(
-                ["address", "string"], [msg_sender, req_json["token_id"]]
-            )
             logger.info(payload)
             contract_address = ERC_721_CONTRACT_ADRESS.lower()
             voucher = Voucher(contract_address, payload)
