@@ -1,67 +1,64 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NFTLending {
-    address public dAppAddress;
-    address public borrower;
-    uint public lendingEndTime;
+contract MultiSigNFTWallet is Ownable {
+    address public owner1;
+    address public owner2;
+    address public currentHolder;
+    mapping(address => mapping(uint256 => bool)) public approvals;
     IERC721 public nftContract;
-    uint public tokenId;
-    bool public lendingActive;
-    
-    modifier onlyDApp() {
-        require(msg.sender == dAppAddress, "Caller is not the dApp");
+
+    event NFTDeposited(address indexed from, uint256 tokenId);
+    event NFTWithdrawn(address indexed to, uint256 tokenId);
+
+    modifier onlyOwners() {
+        require(msg.sender == owner1 || msg.sender == owner2, "Not an owner");
         _;
     }
-    
-    modifier onlyBorrower() {
-        require(msg.sender == borrower, "Caller is not the borrower");
+
+    modifier bothApproved(uint256 tokenId) {
+        require(approvals[owner1][tokenId] && approvals[owner2][tokenId], "Both owners must approve");
         _;
     }
-    
-    modifier lendingNotActive() {
-        require(!lendingActive, "Lending is already active");
-        _;
-    }
-    
-    modifier lendingActiveOnly() {
-        require(lendingActive, "Lending is not active");
-        _;
-    }
-    
-    constructor(address _dAppAddress, address _nftContract, uint _tokenId, uint _lendingDuration) {
-        dAppAddress = _dAppAddress;
+
+    constructor(address _owner1, address _owner2, address _nftContract) Ownable(_owner1) {
+        owner1 = _owner1;
+        owner2 = _owner2;
         nftContract = IERC721(_nftContract);
-        tokenId = _tokenId;
-        lendingEndTime = block.timestamp + _lendingDuration;
     }
-    
-    function lendNFT(address _borrower) external onlyDApp lendingNotActive {
-        borrower = _borrower;
-        lendingActive = true;
-        nftContract.transferFrom(dAppAddress, address(this), tokenId);
+
+    function depositNFT(uint256 tokenId) external onlyOwners {
+        require(nftContract.ownerOf(tokenId) == msg.sender, "Not the owner of the NFT");
+        nftContract.transferFrom(msg.sender, address(this), tokenId);
+        approvals[owner1][tokenId] = false;
+        approvals[owner2][tokenId] = false;
+        currentHolder = address(this);
+        emit NFTDeposited(msg.sender, tokenId);
     }
-    
-    function returnNFT() external onlyDApp lendingActiveOnly {
-        nftContract.transferFrom(address(this), dAppAddress, tokenId);
-        lendingActive = false;
+
+    function approveTransfer(uint256 tokenId) external onlyOwners {
+        approvals[msg.sender][tokenId] = true;
     }
-    
-    function getNFT() external view returns (address, uint) {
-        return (address(nftContract), tokenId);
+
+    function transferNFT(address to, uint256 tokenId) external onlyOwners bothApproved(tokenId) {
+        require(currentHolder == address(this), "NFT is not held by the contract");
+        nftContract.transferFrom(address(this), to, tokenId);
+        approvals[owner1][tokenId] = false;
+        approvals[owner2][tokenId] = false;
+        currentHolder = to;
+        emit NFTWithdrawn(to, tokenId);
     }
-    
-    function isLendingActive() external view returns (bool) {
-        return lendingActive;
-    }
-    
-    function extendLending(uint _additionalDuration) external onlyDApp lendingActiveOnly {
-        lendingEndTime += _additionalDuration;
-    }
-    
-    function terminateLending() external onlyDApp lendingActiveOnly {
-        lendingActive = false;
-        nftContract.transferFrom(address(this), dAppAddress, tokenId);
+
+    function returnNFT(uint256 tokenId) external onlyOwners {
+        require(currentHolder != address(this), "NFT is already held by the contract");
+        nftContract.transferFrom(currentHolder, owner1, tokenId);
+        approvals[owner1][tokenId] = false;
+        approvals[owner2][tokenId] = false;
+        currentHolder = address(this);
+        emit NFTWithdrawn(owner1, tokenId);
     }
 }
+
