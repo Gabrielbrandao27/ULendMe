@@ -11,8 +11,12 @@ contract MultiSigNFTWallet is Ownable {
     mapping(address => mapping(uint256 => bool)) public approvals;
     IERC721 public nftContract;
 
+    // Existing events
     event NFTDeposited(address indexed from, uint256 tokenId);
     event NFTWithdrawn(address indexed to, uint256 tokenId);
+    event ApprovalGranted(address indexed owner, uint256 indexed tokenId);
+    event NFTTransferred(address indexed from, address indexed to, uint256 tokenId);
+    event NFTReturned(address indexed from, address indexed to, uint256 tokenId);
 
     modifier onlyOwners() {
         require(msg.sender == owner1 || msg.sender == owner2, "Not an owner");
@@ -41,6 +45,7 @@ contract MultiSigNFTWallet is Ownable {
 
     function approveTransfer(uint256 tokenId) external onlyOwners {
         approvals[msg.sender][tokenId] = true;
+        emit ApprovalGranted(msg.sender, tokenId); // Emit approval event
     }
 
     function transferNFT(address to, uint256 tokenId) external onlyOwners bothApproved(tokenId) {
@@ -50,6 +55,7 @@ contract MultiSigNFTWallet is Ownable {
         approvals[owner2][tokenId] = false;
         currentHolder = to;
         emit NFTWithdrawn(to, tokenId);
+        emit NFTTransferred(address(this), to, tokenId); // Emit transfer event
     }
 
     function returnNFT(uint256 tokenId) external onlyOwners {
@@ -57,8 +63,7 @@ contract MultiSigNFTWallet is Ownable {
         nftContract.transferFrom(currentHolder, owner1, tokenId);
         approvals[owner1][tokenId] = false;
         approvals[owner2][tokenId] = false;
+        emit NFTReturned(currentHolder, owner1, tokenId); // Emit return event
         currentHolder = address(this);
-        emit NFTWithdrawn(owner1, tokenId);
     }
 }
-
