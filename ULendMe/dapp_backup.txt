@@ -27,29 +27,6 @@ rollup_address = ""
 # this structure will store all the information related to the user
 user_info = {}
 
-# Add this near the top of your dapp.py file
-nft_listings = {}
-
-
-def post_nft_for_lending(owner, token_id, price, lending_period):
-    logger.info(f"User {owner} is posting NFT {token_id} for lending")
-
-    if owner not in nft_listings:
-        nft_listings[owner] = []
-
-    nft_listings[owner].append(
-        {
-            "token_id": token_id,
-            "price": price,
-            "lending_period": lending_period,
-            "is_available": True,  # Initially, the NFT is available for lending
-        }
-    )
-
-    logger.info(f"NFT {token_id} posted for lending by {owner}")
-
-    return "accept"
-
 
 def handle_advance(data):
     logger.info(f"Received advance request data {data}")
@@ -171,27 +148,36 @@ def handle_advance(data):
         logger.debug(error_msg, exc_info=True)
         return "reject"
 
-    # Posting an NFT for lending
+    # Adding offer to the Catalog
     try:
-        req_json = decode_json(payload)
-        if req_json["method"] == "post_nft_for_lending":
-            owner = msg_sender
-            token_id = req_json["token_id"]
-            price = req_json["price"]
-            lending_period = req_json["lending_period"]
+        offer, offer_token_id, price, post_timestamp, loan_period = hex2str(
+            payload
+        ).split(",")
 
-            post_nft_for_lending(owner, token_id, price, lending_period)
+        if offer == "offer":
+            address_current = msg_sender
 
-            response = requests.post(
-                rollup_server + "/notice",
-                json={
-                    "payload": str2hex(f"NFT {token_id} posted by {owner} for lending")
-                },
+            if address_current not in user_info:
+                user_info[address_current] = {
+                    "offers": [],
+                    "loaned_tokens": [],
+                    "reputation": 0,
+                }
+
+            user_info[address_current]["offers"].append(
+                {
+                    offer_token_id: {
+                        "Price": price,
+                        "Post Date": post_timestamp,
+                        "Loan Period": loan_period,
+                    }
+                }
             )
+
             return "accept"
 
     except Exception as error:
-        error_msg = f"Failed to post NFT for lending '{payload}'. {error}"
+        error_msg = f"Failed to process offer '{payload}'. {error}"
         logger.debug(error_msg, exc_info=True)
         return "reject"
 

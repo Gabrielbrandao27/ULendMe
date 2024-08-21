@@ -1,0 +1,30 @@
+Workflow Summary:
+
+    Posting an NFT for Lending (User1):
+        - User1 lists an NFT (e.g., NFT1) for lending on the platform, setting the desired price and lending period.
+        - This listing appears on the platform's wall, visible to other users.
+
+    Borrowing the NFT (User2):
+        - User2 sees the listing and decides to borrow NFT1 under the specified terms (price and lending period).
+        - User1 is notified that there is interest in borrowing NFT1. The NFT1 is then temporarily hidden from the wall (making it unavailable to others).
+        - User1 transfers NFT1 to the MultiSigNFTWallet contract. This transfer must be approved by User1 and then confirmed by the contract.
+
+    NFT Usage During the Lending Period:
+        - While NFT1 is in the multi-sig wallet, both User1 and User2 can access it as per the agreed terms. The multi-sig ensures that neither party can misuse the NFT without mutual consent.
+
+    End of Lending Period:
+        - Once the agreed lending period ends, User2 must return the NFT1 to User1. The transfer back to User1 is facilitated by the MultiSigNFTWallet and requires the consent of both User1 and User2.
+        - Upon successful transfer, NFT1 is removed from the multi-sig wallet and returned to User1's wallet.
+        - The NFT1 is then available for new transactions or listings on the platform.
+
+Key Contract and dApp Interaction Points:
+
+    Posting on the Wall: A function to allow User1 to list an NFT, setting metadata like price and period.
+    
+    Interest Notification: A system to notify User1 when someone expresses interest in borrowing their NFT.
+    
+    Transfer to Multi-Sig Wallet: A process to initiate and confirm the transfer of the NFT to the MultiSigNFTWallet.
+    
+    Lending Period Management: Track the start and end of the lending period, ensuring that both parties can access the NFT as agreed.
+    
+    Return of NFT: Facilitate the return of the NFT from User2 to User1, ensuring mutual agreement via the multi-sig mechanism.
