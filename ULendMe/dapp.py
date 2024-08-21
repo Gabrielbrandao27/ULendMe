@@ -27,7 +27,7 @@ rollup_address = ""
 # this structure will store all the information related to the user
 user_info = {}
 
-# Add this near the top of your dapp.py file
+# this structure will store all the information related to the NFTs listed on the wall
 nft_listings = {}
 
 
