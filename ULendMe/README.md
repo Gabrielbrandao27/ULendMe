@@ -22,19 +22,30 @@
 
 >>>>>
 > Tutorial on Lising NFTs on the Catalog through the dApp:
-- yarn start input send --payload '{
+
+- Sending input for posting NFT
+```shell
+yarn start input send --payload '{
     "method": "post_nft_for_lending",
     "token_id": 1,
     "price": 100,
     "lending_period": 7
 }' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e
-- yarn start inspect --payload "Catalog"
+```
 
+- Inspecting Catalog
+```shell
+yarn start inspect --payload "Catalog"
+```
 
 >>>>>
 > Tutorial on Marking for Borrowing an NFT on the Catalog through the dApp:
-- yarn start input send --payload '{
+
+- Sending input for choosing NFT for Borrowing
+```shell
+yarn start input send --payload '{
     "method": "borrow_nft",
     "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "token_id": 1
 }' --address 0xab7528bb862fb57e8a2bcd567a2e929a0be56a5e --accountIndex '1'
+```
