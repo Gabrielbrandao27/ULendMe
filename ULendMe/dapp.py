@@ -2,8 +2,11 @@ from cartesi_wallet.outputs import Voucher
 from eth_abi import encode as encode_abi
 from utils import hex2str, str2hex, encode, decode_json
 from urllib.parse import urlparse
+import web3
+from web3 import Web3
 import cartesi_wallet.wallet as Wallet
 import logging
+import json
 import os
 import requests
 
@@ -12,6 +15,19 @@ logger = logging.getLogger(__name__)
 
 rollup_server = os.environ["ROLLUP_HTTP_SERVER_URL"]
 logger.info(f"HTTP rollup_server url is {rollup_server}")
+
+# Connect to the Ethereum network
+web3 = Web3(Web3.HTTPProvider("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"))
+
+# Load the ABI of the Factory contract
+with open("factory_abi.json") as f:
+    factory_abi = json.load(f)
+
+# Replace with the actual deployed Factory contract address
+FACTORY_CONTRACT_ADDRESS = "0xYourFactoryContractAddress"
+
+# Initialize the Factory contract
+factory_contract = web3.eth.contract(address=FACTORY_CONTRACT_ADDRESS, abi=factory_abi)
 
 DAPP_RELAY = "0xF5DE34d6BbC0446E2a45719E718efEbaaE179daE"
 ERC_721 = "0x237F8DD094C0e47f4236f12b4Fa01d6Dae89fb87"
@@ -29,6 +45,9 @@ user_info = {}
 
 # this structure will store all the information related to the NFTs listed on the wall
 nft_listings = {}
+
+# It's a dictionary where token_id is the key and the voucher object is the value.
+pending_vouchers = {}
 
 
 def post_nft_for_lending(owner, token_id, price, lending_period):
@@ -51,10 +70,84 @@ def post_nft_for_lending(owner, token_id, price, lending_period):
     return "accept"
 
 
+def deploy_multisig_wallet(owner, borrower, token_id):
+    logger.info(
+        f"Deploying MultiSig Wallet for NFT {token_id} between {owner} and {borrower}"
+    )
+
+    # Call the Factory contract to deploy a new multi-sig wallet.
+    # Prepare transaction parameters
+    tx = factory_contract.functions.deployMultiSigWallet(owner, borrower).buildTransaction({
+        'from': owner,          # The owner initiates the transaction
+        'gas': 3000000,         # Set gas limit
+        'gasPrice': web3.toWei('20', 'gwei')  # Set gas price
+    })
+
+    # Send the transaction to the Ethereum network
+    signed_tx = web3.eth.account.sign_transaction(tx, private_key='YOUR_PRIVATE_KEY')
+    tx_hash = web3.eth.sendRawTransaction(signed_tx.rawTransaction)
+
+    # Wait for the transaction to be mined and retrieve the receipt
+    receipt = web3.eth.waitForTransactionReceipt(tx_hash)
+    multisig_address = receipt["contractAddress"]
+
+    logger.info(f"Deployed MultiSig Wallet at {multisig_address} for NFT {token_id}")
+
+    return multisig_address
+
+
+def create_voucher_for_new_multisig_wallet(owner, borrower, token_id, multisig_address):
+    logger.info(
+        f"Creating voucher to transfer NFT {token_id} to MultiSig Wallet {multisig_address}"
+    )
+
+    # Prepare the voucher details
+    voucher = Voucher(
+        contract_address=multisig_address,  # Use the new multi-sig wallet address
+        payload=encode_abi(
+            ["address", "uint256"],  # types of the arguments
+            [owner, token_id],  # values of the arguments
+        ),
+    )  # Prepare the payload for the NFT transfer
+
+    # Store the voucher in state for later execution
+    pending_vouchers[token_id] = voucher
+
+    logger.info(
+        f"Voucher created for NFT {token_id} to MultiSig Wallet {multisig_address}"
+    )
+
+    return "accept"
+
+
+def execute_voucher_for_nft_transfer(token_id):
+    logger.info(f"Executing voucher to transfer NFT {token_id}")
+
+    # Retrieve the voucher for this NFT
+    voucher = pending_vouchers.get(token_id)
+    if not voucher:
+        error_msg = f"No voucher found for NFT {token_id}"
+        logger.error(error_msg)
+        return "reject"
+
+    # Execute the voucher using the rollup server
+    response = requests.post(
+        rollup_server + "/voucher",
+        json={"payload": voucher.payload, "destination": voucher.destination},
+    )
+
+    if response.status_code == 200:
+        logger.info(f"Voucher executed for NFT {token_id}")
+    else:
+        logger.error(f"Failed to execute voucher for NFT {token_id}")
+
+    return "accept"
+
+
 def borrow_nft_request(borrower, owner, token_id):
     logger.info(f"User {borrower} is requesting to borrow NFT {token_id} from {owner}")
 
-    # Check if the NFT is still available
+    # Check if the NFT is available
     if owner not in nft_listings or token_id not in [
         item["token_id"] for item in nft_listings[owner] if item["is_available"]
     ]:
@@ -68,56 +161,19 @@ def borrow_nft_request(borrower, owner, token_id):
             item["is_available"] = False
             break
 
-    # Notify User1 (owner)
+    # Deploy a new multi-sig wallet using the factory
+    multisig_address = deploy_multisig_wallet(owner, borrower, token_id)
+
+    # Create the voucher for transferring the NFT to the multi-sig wallet
+    create_voucher_for_new_multisig_wallet(owner, borrower, token_id, multisig_address)
+
+    # Prompt for the voucher to be executed automatically after User2 accepts
+    execute_voucher_for_nft_transfer(token_id)
+
     logger.info(
-        f"User {owner} notified: User {borrower} wants to borrow NFT {token_id}"
-    )
-    prompt_user1_to_transfer(owner, token_id)
-
-    # Simulate User1's approval and transfer the NFT
-    transfer_nft_to_multisig(owner, token_id)
-
-    return "accept"
-
-
-def prompt_user1_to_transfer(owner, token_id):
-    logger.info(
-        f"Prompting User {owner} to transfer NFT {token_id} to the MultiSig Wallet"
+        f"Borrow request processed for NFT {token_id}. MultiSig Wallet created at {multisig_address}"
     )
 
-    # Here, we would normally interact with User1 through the dApp interface or send a specific prompt.
-    # For this example, we'll simulate the prompt with a log and a notice.
-
-    requests.post(
-        rollup_server + "/notice",
-        json={
-            "payload": str2hex(f"Please transfer NFT {token_id} to the MultiSig Wallet")
-        },
-    )
-
-    return "accept"
-
-
-def transfer_nft_to_multisig(owner, token_id):
-    logger.info(f"Transferring NFT {token_id} from User {owner} to the MultiSig Wallet")
-
-    # Normally, you'd interact with the blockchain to perform this transfer.
-    # We'll simulate this by calling a hypothetical smart contract function in the MultiSigNFTWallet.
-
-    # Example interaction (you'd replace this with actual contract interaction code):
-    # multisig_contract.transferNFT(owner, token_id)
-
-    # Assuming success:
-    response = requests.post(
-        rollup_server + "/notice",
-        json={
-            "payload": str2hex(
-                f"NFT {token_id} successfully transferred to MultiSig Wallet"
-            )
-        },
-    )
-
-    logger.info(f"NFT {token_id} transferred to MultiSig Wallet")
     return "accept"
 
 

@@ -1,3 +1,4 @@
 requests == 2.31.0
 cartesi-wallet == 0.0.4
 eth_abi == 4.0.0
+web3==5.31.1
