@@ -1,14 +1,14 @@
+import json
+import logging
+import os
+
+import cartesi_wallet.wallet as Wallet
+import requests
+import web3
 from cartesi_wallet.outputs import Voucher
 from eth_abi import encode as encode_abi
-from utils import hex2str, str2hex, encode, decode_json
-from urllib.parse import urlparse
-import web3
+from utils import decode_json, encode, hex2str, str2hex
 from web3 import Web3
-import cartesi_wallet.wallet as Wallet
-import logging
-import json
-import os
-import requests
 
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)

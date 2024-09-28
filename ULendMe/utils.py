@@ -1,4 +1,3 @@
-from urllib.parse import urlparse
 import json
 
 def hex2str(hex):
