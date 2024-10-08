@@ -110,6 +110,11 @@ def create_voucher_for_new_multisig_wallet(owner, borrower, token_id, multisig_a
         ),
     )  # Prepare the payload for the NFT transfer
 
+    response = requests.post(
+        rollup_server + "/voucher",
+        json={"payload": voucher.payload, "destination": voucher.destination},
+    )
+
     # Store the voucher in state for later execution
     pending_vouchers[token_id] = voucher
 
@@ -136,10 +141,10 @@ def execute_voucher_for_nft_transfer(token_id):
         json={"payload": voucher.payload, "destination": voucher.destination},
     )
 
-    if response.status_code == 200:
-        logger.info(f"Voucher executed for NFT {token_id}")
-    else:
-        logger.error(f"Failed to execute voucher for NFT {token_id}")
+    # if response.status_code == 200:
+    #     logger.info(f"Voucher executed for NFT {token_id}")
+    # else:
+    #     logger.error(f"Failed to execute voucher for NFT {token_id}")
 
     return "accept"
 
